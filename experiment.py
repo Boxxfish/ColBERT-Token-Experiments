@@ -1,11 +1,11 @@
 import numpy as np
 import pyterrier as pt
-from pyterrier_colbert.ranking import ColBERTFactory
-from ir_measures import RR
-
 # Initialize pyterrier
 if not pt.started():
     pt.init()
+
+from pyterrier_colbert.ranking import ColBERTFactory
+from ir_measures import RR
 
 #create a ColBERT ranking factory based on the pretrained checkpoint
 pytcolbert = ColBERTFactory("http://www.dcs.gla.ac.uk/~craigm/ecir2021-tutorial/colbert_model_checkpoint.zip", "./msmarco_index", "msmarco", gpu=True)
