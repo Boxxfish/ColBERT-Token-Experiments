@@ -1,3 +1,6 @@
 [submodule "pyterrier_colbert"]
 	path = pyterrier_colbert
 	url = https://github.com/qxzcode/pyterrier_colbert.git
+[submodule "ColBERT"]
+	path = ColBERT
+	url = https://github.com/Boxxfish/ColBERT.git
