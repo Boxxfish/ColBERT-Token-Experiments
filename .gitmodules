@@ -3,4 +3,4 @@
 	url = https://github.com/qxzcode/pyterrier_colbert.git
 [submodule "ColBERT"]
 	path = ColBERT
-	url = https://github.com/Boxxfish/ColBERT.git
+	url = https://github.com/gfp34/ColBERT.git
