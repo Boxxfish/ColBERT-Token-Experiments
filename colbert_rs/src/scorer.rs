@@ -74,7 +74,7 @@ impl Scorer {
         };
 
         let num_docs = doc_token_offsets.len() - 1;
-        let doc_masks = (0..num_docs).map(get_mask).collect();
+        let doc_masks = (0..num_docs).into_par_iter().map(get_mask).collect();
 
         // assemble the document embeddings shards
         let mut acc = 0;
