@@ -216,7 +216,7 @@ impl ScorerRef<'_> {
     /// Returns a view of the token embeddings for the document with the given ID.
     fn doc_token_embs(&self, pid: usize) -> ArrayView2<f16> {
         // get the index of the shard that this PID belongs to
-        let shard_index = self.shard_pid_start_offsets.partition_point(|x| pid < *x);
+        let shard_index = self.shard_pid_start_offsets.partition_point(|x| *x <= pid) - 1;
         let shard_start_pid = self.shard_pid_start_offsets[shard_index];
         let local_pid = pid - shard_start_pid;
         self.doc_emb_shards[shard_index].get_embeddings(local_pid)
