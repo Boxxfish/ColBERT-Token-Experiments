@@ -1,0 +1,23 @@
+[package]
+name = "colbert_rs"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "colbert_rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+array-init = "2.1"
+bitvec = "1"
+half = "2.2"
+ndarray = "0.15"
+numpy = { version = "0.19", features = ["half"] }
+ordered-float = "3"
+pyo3 = "0.19"
+rayon = "1.7"
+slice-of-array = "0.3.2"
+
+[profile.release]
+lto = true
+codegen-units = 1
