@@ -38,6 +38,12 @@ pub struct Scorer {
     doc_emb_shards: Vec<DocEmbeddingsShard>,
     /// The first PID in each shard. This Vec has the same length as doc_emb_shards.
     shard_pid_start_offsets: Vec<usize>,
+
+    /// The set of token IDs to prune.
+    token_ids_to_prune: HashSet<i64>,
+
+    /// Whether to prune query tokens.
+    prune_queries: bool,
 }
 
 #[pymethods]
@@ -54,6 +60,8 @@ impl Scorer {
         all_token_ids: PyReadonlyArray1<i64>,
         doc_emb_parts: Vec<(PyReadonlyArray1<i64>, Py<PyArray2<f16>>)>,
         token_ids_to_prune: HashSet<i64>,
+        prune_queries: bool,
+        prune_documents: bool,
     ) -> Self {
         // compute the token masks for all documents
         let doc_token_offsets = doc_token_offsets
@@ -69,7 +77,7 @@ impl Scorer {
             let doc_token_ids = &all_token_ids[start_offset..end_offset];
             doc_token_ids
                 .iter()
-                .map(|token_id| token_ids_to_prune.contains(token_id))
+                .map(|token_id| prune_documents && token_ids_to_prune.contains(token_id))
                 .collect()
         };
 
@@ -107,6 +115,8 @@ impl Scorer {
             doc_masks,
             doc_emb_shards,
             shard_pid_start_offsets,
+            token_ids_to_prune,
+            prune_queries,
         }
     }
 
@@ -117,22 +127,54 @@ impl Scorer {
         &self,
         py: Python,
         query_embs: PyReadonlyArray2<f32>,
+        query_toks: PyReadonlyArray1<i64>,
         pids: Vec<usize>,
     ) -> Vec<f32> {
-        let query_embs = query_embs.as_array();
+        let query_embs = self.prune_query_tokens(&query_embs, &query_toks);
         let scorer = self.as_ref(py);
-        py.allow_threads(move || scorer.score_documents(query_embs, pids))
+        py.allow_threads(move || scorer.score_documents(query_embs.view(), pids))
     }
 
     /// Score a document specified by its passage ID.
-    pub fn score_document(&self, py: Python, query_embs: PyReadonlyArray2<f32>, pid: usize) -> f32 {
-        let query_embs = query_embs.as_array();
+    pub fn score_document(
+        &self,
+        py: Python,
+        query_embs: PyReadonlyArray2<f32>,
+        query_toks: PyReadonlyArray1<i64>,
+        pid: usize,
+    ) -> f32 {
+        let query_embs = self.prune_query_tokens(&query_embs, &query_toks);
         let scorer = self.as_ref(py);
-        py.allow_threads(move || scorer.score_document(query_embs, pid))
+        py.allow_threads(move || scorer.score_document(query_embs.view(), pid))
     }
 }
 
 impl Scorer {
+    fn prune_query_tokens<'a>(
+        &self,
+        query_embs: &'a PyReadonlyArray2<f32>,
+        query_toks: &PyReadonlyArray1<i64>,
+    ) -> CowArray<'a, f32, Ix2> {
+        let query_embs = query_embs.as_array();
+        if self.prune_queries {
+            ndarray::stack(
+                Axis(0),
+                &query_embs
+                    .outer_iter()
+                    .zip(query_toks.as_array())
+                    .filter_map(|(emb, token_id)| {
+                        let keep_token = !self.token_ids_to_prune.contains(token_id);
+                        keep_token.then_some(emb)
+                    })
+                    .collect::<Vec<_>>(),
+            )
+            .unwrap()
+            .into()
+        } else {
+            CowArray::from(query_embs)
+        }
+    }
+
     fn as_ref<'py>(&'py self, py: Python<'py>) -> ScorerRef<'py> {
         ScorerRef {
             doc_masks: &self.doc_masks,
