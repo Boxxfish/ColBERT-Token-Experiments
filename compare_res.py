@@ -15,14 +15,9 @@ msmarco_ds = pt.get_dataset("msmarco_passage")
 # Get list of usable queries that have a corresponding relevant in our limited index
 qids = msmarco_ds.get_qrels("dev")
 
-# comparisons = [
-# 	["no_pruning", "[CLS]_[SEP]_[MASK]_prune_query_True_prune_doc_False"],
-# 	["no_pruning", "[CLS]_[SEP]_[MASK]_prune_query_True_prune_doc_False"],
-# ]
-
 cmp_names = [
 	"no_pruning", 
-    "[CLS]_[SEP]_[MASK]_prune_query_False_prune_doc_False", 
+    '[CLS]_[SEP]_[MASK]_prune_query_False_prune_doc_True', 
     '[CLS]_[SEP]_[MASK]_prune_query_True_prune_doc_False', 
     '[CLS]_[SEP]_[MASK]_prune_query_True_prune_doc_True'
 ]
