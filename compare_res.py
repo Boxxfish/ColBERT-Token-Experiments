@@ -17,9 +17,9 @@ qids = msmarco_ds.get_qrels("dev")
 
 cmp_names = [
 	"no_pruning", 
-    '[CLS]_[SEP]_[MASK]_prune_query_False_prune_doc_True', 
-    '[CLS]_[SEP]_[MASK]_prune_query_True_prune_doc_False', 
-    '[CLS]_[SEP]_[MASK]_prune_query_True_prune_doc_True'
+    '[CLS]_[SEP]_prune_query_False_prune_doc_True', 
+    '[CLS]_[SEP]_prune_query_True_prune_doc_False', 
+    '[CLS]_[SEP]_prune_query_True_prune_doc_True'
 ]
 
 cmp_res = pt.Experiment(
@@ -40,7 +40,7 @@ cmp_res = pt.Experiment(
 print(cmp_res)
 
 try:
-	cmp_res.to_csv(f"results/[CLS]_[SEP]_[MASK]-all_cmp.csv")
+	cmp_res.to_csv(f"results/[CLS]_[SEP]-all_cmp.csv")
 except:
 	print("Could not save to csv")
 
