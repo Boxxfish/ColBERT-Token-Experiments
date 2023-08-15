@@ -15,27 +15,6 @@ msmarco_ds = pt.get_dataset("msmarco_passage")
 # Get list of usable queries that have a corresponding relevant in our limited index
 qids = msmarco_ds.get_qrels("dev")
 
-######################
-# Control Calculations
-######################
-# dense_e2e = pytcolbert.end_to_end()
-
-# print()
-# print("No Pruning Experiment...")
-# pt.Experiment(
-#     [dense_e2e],
-#     msmarco_ds.get_topics("dev"),
-#     msmarco_ds.get_qrels("dev"),
-#     eval_metrics=["map", RR@10],
-#     save_dir="results",
-#     save_mode="reuse",
-#     batch_size=5000,
-#     verbose=True,
-#     names=["no_pruning"]
-# )
-
-# del dense_e2e
-
 ################################
 # BERT token pruned calculations
 ################################
