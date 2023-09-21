@@ -1,5 +1,12 @@
 # Generated files
 msmarco_index/
+trec_index/
 msmarco_index_sm/
 msmarco_index.tar.gz
 results
+*.npy
+*.json
+*.out
+*.pkl
+*.pyc
+*.jpg

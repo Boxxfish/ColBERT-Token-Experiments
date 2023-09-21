@@ -1,18 +1,18 @@
 # Initialize pyterrier
+import pandas as pd
 import pyterrier as pt
 if not pt.started():
     pt.init()
 from pyterrier_colbert.ranking import ColBERTFactory
-from ir_measures import RR
+from ir_measures import RR, NDCG, MAP
+from nltk.corpus import stopwords
+from trec_utils import process_ds
 
 # Argparse stuff
 from argparse import ArgumentParser
 parser = ArgumentParser()
-parser.add_argument("--prune-query", action="store_true")
-parser.add_argument("--prune-doc", action="store_true")
+parser.add_argument("--no-pruning", action="store_true")
 args = parser.parse_args()
-prune_query = args.prune_query
-prune_doc = args.prune_doc
 
 # Tokenization stuff
 from transformers import BertTokenizerFast
@@ -20,13 +20,9 @@ tokenizer = BertTokenizerFast.from_pretrained("bert-base-uncased")
 
 #create a ColBERT ranking factory based on the pretrained checkpoint
 pytcolbert = ColBERTFactory("http://www.dcs.gla.ac.uk/~craigm/ecir2021-tutorial/colbert_model_checkpoint.zip", 
-                            "./msmarco_index", "msmarco", gpu=True)
+                            "./trec_index", "trec", gpu=True)
 
-# Download and initialize the msmarco dataset
-msmarco_ds = pt.get_dataset("msmarco_passage")
-
-# Get list of usable queries that have a corresponding relevant in our limited index
-qids = msmarco_ds.get_qrels("dev")
+topic, qrels = process_ds()
 
 ######################
 # Control Calculations
@@ -55,23 +51,29 @@ qids = msmarco_ds.get_qrels("dev")
 
 # Token IDs.
 Q = "[unused0]"
-D = "[unused1]"
-prune_tokens = ["[SEP]"]
+prune_tokens = [Q, "[SEP]", "[MASK]", "[CLS]"]
 prune_set = set(tokenizer.convert_tokens_to_ids(prune_tokens))
+prune_tokens_str = prune_tokens
+if args.no_pruning:
+    pass
+else:
+    tokenized_ids: list = list(set(sum(tokenizer(stopwords.words("english"), add_special_tokens=False).input_ids, [])))
+    prune_set = prune_set.union(set(tokenized_ids))
+    prune_tokens_str += tokenizer.convert_ids_to_tokens(list(prune_set))
 
-dense_e2e_bert_pruned = pytcolbert.end_to_end(prune_set, prune_queries=prune_query, prune_documents=prune_doc)
-print(f"Experiment: prune_query={prune_query}, prune_doc={prune_doc}")
+dense_e2e_bert_pruned = pytcolbert.end_to_end(prune_set, prune_queries=True, prune_documents=False)
+print(f"Experiment: Tokens to prune: {prune_tokens_str}")
 pt.Experiment(
     [dense_e2e_bert_pruned],
-    msmarco_ds.get_topics("dev"),
-    msmarco_ds.get_qrels("dev"),
+    topic,
+    qrels,
     filter_by_qrels=True,
-    eval_metrics=["map", RR@1, RR@5, RR@10, RR@20],
+    eval_metrics=[MAP, RR@10, NDCG@10, NDCG@1000],
     save_dir="results",
     save_mode="reuse",
     batch_size=10000,
     verbose=True,
-    names=[f"{'_'.join(prune_tokens)}_prune_query_{prune_query}_prune_doc_{prune_doc}"]
+    names=["trec_" + ("pruned_stopwords" if not args.no_pruning else "no_pruning")]
 )
 
 del dense_e2e_bert_pruned
