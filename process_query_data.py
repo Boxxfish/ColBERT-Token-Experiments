@@ -10,12 +10,12 @@ if not pt.started():
     pt.init()
 from tqdm import tqdm
 import pickle
+from pathlib import Path
 
 def main():
     with open("q_data.json", "r") as file:
         q_data = json.load(file)
     q_embs = np.load("q_embs.npy")
-    d_embs = np.load("d_embs.npy")
     
     tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
     msmarco_ds = pt.get_dataset("msmarco_passage")
@@ -27,9 +27,13 @@ def main():
             pca = pickle.load(f)
     except:
         print("Couldn't load pickled PCA. Training PCA on all doc embeddings...")
-        pca = IncrementalPCA(n_components=3)
-        d_shape = d_embs.shape
-        pca.fit(d_embs.reshape(d_shape[0] * d_shape[1] * d_shape[2], d_shape[3]))
+        pca = IncrementalPCA(n_components=3, batch_size=10000)
+        d_embs_path = Path("d_embs")
+        num_parts = len(list(d_embs_path.iterdir()))
+        for i in range(num_parts):
+            d_embs = np.load(f"d_embs/{i}.npy")
+            d_shape = d_embs.shape
+            pca.partial_fit(d_embs.reshape(d_shape[0] * d_shape[1], d_shape[2]))
         with open("pca.pkl", "wb") as f:
             pickle.dump(pca, f)
 

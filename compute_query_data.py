@@ -32,10 +32,25 @@ def main():
     pytcolbert = ColBERTFactory("http://www.dcs.gla.ac.uk/~craigm/ecir2021-tutorial/colbert_model_checkpoint.zip", "./msmarco_index", "msmarco", gpu=True)
     dense_e2e = pytcolbert.end_to_end() % int(args.k)
 
+    # Save all doc embeddings in batches.
+    # Only needs to be done once, if you need to do this again, uncomment this
+    # section.
+    
+    # embs_d_all = []
+    # part_idx = 0
+    # for i in tqdm(range(pytcolbert.numdocs)):
+    #     embs_d_all.append(pytcolbert.rrm.get_embedding(i))
+    #     if (i + 1) % 100000 == 0:
+    #         embs_d_all = np.stack(embs_d_all, 0)
+    #         np.save(f"d_embs/{part_idx}.npy", embs_d_all)
+    #         part_idx += 1
+    #         embs_d_all = []
+    # embs_d_all = np.stack(embs_d_all, 0)
+    # np.save(f"d_embs/{part_idx}.npy", embs_d_all)
+
     # Retrieve and process top docs for each query
     msmarco_ds = pt.get_dataset("msmarco_passage")
     embs = []
-    embs_d_all = []
     q_data_all = {}
     print("Processing queries...")
     for i in tqdm(range(int(args.queries))):
@@ -63,9 +78,7 @@ def main():
                 for tok_idx in range(min_idx, max_idx):
                     ctx.append(int(ids_d[tok_idx]))
                 q_tok_data[j]["d_tok_ctx"].append(ctx)
-            embs_d_for_query.append(embs_d)
         embs.append(embs_q.squeeze(0).cpu().numpy())
-        embs_d_all.append(np.stack(embs_d_for_query, 0))
         q_data = {
             "q_tok_data": q_tok_data,
             "emb_index": i,
@@ -75,8 +88,6 @@ def main():
     # Save data
     embs = np.stack(embs, 0)
     np.save("q_embs.npy", embs)
-    embs_d_all = np.stack(embs_d_all, 0)
-    np.save("d_embs.npy", embs_d_all)
 
     with open("q_data.json", "w") as f:
         json.dump(q_data_all, f)
