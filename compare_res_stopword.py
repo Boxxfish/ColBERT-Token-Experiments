@@ -13,8 +13,8 @@ pytcolbert = ColBERTFactory("http://www.dcs.gla.ac.uk/~craigm/ecir2021-tutorial/
 topics, qrels = process_ds()
 
 cmp_names = [
-	"trec_no_pruning",
-	"trec_pruned_stopwords",
+	"trec_pruned_special_tokens",
+	"trec_pruned_stopwords_and_special_tokens",
 ]
 
 cmp_res = pt.Experiment(
@@ -26,7 +26,7 @@ cmp_res = pt.Experiment(
     save_dir="results",
     save_mode="reuse",
     # batch_size=5000,
-    # correction='bonferroni',
+    correction='bonferroni',
     verbose=True,
     baseline=0,
     names=cmp_names
