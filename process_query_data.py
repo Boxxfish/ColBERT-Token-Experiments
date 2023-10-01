@@ -20,7 +20,7 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
     msmarco_ds = pt.get_dataset("msmarco_passage")
     topic = msmarco_ds.get_topics("dev")
-    
+
     # Train PCA
     try:
         with open("pca.pkl", "rb") as f:
