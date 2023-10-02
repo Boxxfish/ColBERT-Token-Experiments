@@ -96,9 +96,8 @@ def main():
 
     with open("pca_2d.pkl", "rb") as f:
         pca = pickle.load(f)
-    pca.fit(np.concatenate([q_embs_before_current, q_embs_after_current], 0))
-    xformed_before = pca.transform(q_embs_before_current)[:, :2]
-    xformed_after = pca.transform(q_embs_after_fixed)[:, :2]
+    xformed_before = pca.transform(q_embs_before_current)
+    xformed_after = pca.transform(q_embs_after_fixed)
     plt.scatter(xformed_before[:, 0], xformed_before[:, 1], label="before")
     plt.scatter(xformed_after[:, 0], xformed_after[:, 1], label="after")
     for i, point in enumerate(xformed_before):
