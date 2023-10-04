@@ -19,7 +19,7 @@ import json
 def main():
     parser = ArgumentParser()
     parser.add_argument("--compute-embeddings", action="store_true")
-    parser.add_argument("--analyze", action="store_true")
+    parser.add_argument("--analyze")
     parser.add_argument("--experiment", action="store_true")
     args = parser.parse_args()
 
@@ -80,7 +80,7 @@ def main():
         with open("d_q_mask_artifacts/metadata.json", "r") as f:
             metadata = json.load(f)
 
-        q_id = 0
+        q_id = 107
         query = metadata[q_id]["query"]
         q_embs_q = q_embs_q[q_id]
         q_embs_d = q_embs_d[q_id]
@@ -93,20 +93,23 @@ def main():
         xformed_mask = pca.transform(q_embs_mask)
         xformed_pad = pca.transform(q_embs_pad)
         plt.scatter(xformed_q[:, 0], xformed_q[:, 1], label="Q")
-        # plt.scatter(xformed_d[:, 0], xformed_d[:, 1], label="D")
-        plt.scatter(xformed_mask[:, 0], xformed_mask[:, 1], label="MASK")
-        # plt.scatter(xformed_pad[:, 0], xformed_pad[:, 1], label="PAD (None)")
         for i, point in enumerate(xformed_q):
-            plt.annotate(i, point)
-        for i, point in enumerate(xformed_d):
-            plt.annotate(i, point)
-        # for i, point in enumerate(xformed_mask):
-        #     plt.annotate(i, point)
-        # for i, point in enumerate(xformed_pad):
-        #     plt.annotate(i, point)
+            plt.annotate(i + 1, point)
+        if args.analyze == "d":
+            plt.scatter(xformed_d[:, 0], xformed_d[:, 1], label="D")
+            for i, point in enumerate(xformed_d):
+                plt.annotate(i + 1, point)
+        if args.analyze == "mask":
+            plt.scatter(xformed_mask[:, 0], xformed_mask[:, 1], label="MASK")
+            for i, point in enumerate(xformed_mask):
+                plt.annotate(i + 1, point)
+        if args.analyze == "pad":
+            plt.scatter(xformed_pad[:, 0], xformed_pad[:, 1], label="PAD (None)")
+            for i, point in enumerate(xformed_pad):
+                plt.annotate(i + 1, point)
         plt.title(query, fontdict={"size": 8})
         plt.legend()
-        plt.savefig("d_q_mask_scatter.png")
+        plt.savefig(f"scatter_{args.analyze}.png")
 
     if args.experiment:
         pytcolbert = ColBERTFactory("http://www.dcs.gla.ac.uk/~craigm/ecir2021-tutorial/colbert_model_checkpoint.zip", 
