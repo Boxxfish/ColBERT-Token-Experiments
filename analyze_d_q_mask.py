@@ -171,68 +171,68 @@ def main():
         # del dense_e2e_bert_pruned
 
         # Condition 4: D, but D is removed afterwards
-        D = 2
-        dense_e2e_bert_pruned = pytcolbert.end_to_end({D}, prune_queries=True, prune_documents=False, replace_q=D)
-        print("Using D, then removing D...")
-        pt.Experiment(
-            [dense_e2e_bert_pruned],
-            topic,
-            qrels,
-            filter_by_qrels=True,
-            eval_metrics=[MAP, RR@10, NDCG@10, NDCG@1000],
-            save_dir="results",
-            save_mode="reuse",
-            batch_size=10000,
-            verbose=True,
-            names=["trec_d_removed"]
-        )
-        del dense_e2e_bert_pruned
+        # D = 2
+        # dense_e2e_bert_pruned = pytcolbert.end_to_end({D}, prune_queries=True, prune_documents=False, replace_q=D)
+        # print("Using D, then removing D...")
+        # pt.Experiment(
+        #     [dense_e2e_bert_pruned],
+        #     topic,
+        #     qrels,
+        #     filter_by_qrels=True,
+        #     eval_metrics=[MAP, RR@10, NDCG@10, NDCG@1000],
+        #     save_dir="results",
+        #     save_mode="reuse",
+        #     batch_size=10000,
+        #     verbose=True,
+        #     names=["trec_d_removed"]
+        # )
+        # del dense_e2e_bert_pruned
 
         # Condition 6: Q, but Q is removed afterwards
-        Q = 1
-        dense_e2e_bert_pruned = pytcolbert.end_to_end({Q}, prune_queries=True, prune_documents=False)
-        print("Using Q, then removing Q...")
-        pt.Experiment(
-            [dense_e2e_bert_pruned],
-            topic,
-            qrels,
-            filter_by_qrels=True,
-            eval_metrics=[MAP, RR@10, NDCG@10, NDCG@1000],
-            save_dir="results",
-            save_mode="reuse",
-            batch_size=10000,
-            verbose=True,
-            names=["trec_q_removed"]
-        )
-        del dense_e2e_bert_pruned
+        # Q = 1
+        # dense_e2e_bert_pruned = pytcolbert.end_to_end({Q}, prune_queries=True, prune_documents=False)
+        # print("Using Q, then removing Q...")
+        # pt.Experiment(
+        #     [dense_e2e_bert_pruned],
+        #     topic,
+        #     qrels,
+        #     filter_by_qrels=True,
+        #     eval_metrics=[MAP, RR@10, NDCG@10, NDCG@1000],
+        #     save_dir="results",
+        #     save_mode="reuse",
+        #     batch_size=10000,
+        #     verbose=True,
+        #     names=["trec_q_removed"]
+        # )
+        # del dense_e2e_bert_pruned
 
         # Get results
-        cmp_res = pt.Experiment(
-            [None] * 2,
-            topic,
-            qrels,
-            filter_by_qrels=True,
-            eval_metrics=[MAP, RR@10, NDCG@10, NDCG@1000],
-            save_dir="results",
-            save_mode="reuse",
-            # batch_size=5000,
-            # correction='bonferroni',
-            verbose=True,
-            baseline=0,
-            names=["trec_q", "trec_d"]
-        )
+        # cmp_res = pt.Experiment(
+        #     [None] * 2,
+        #     topic,
+        #     qrels,
+        #     filter_by_qrels=True,
+        #     eval_metrics=[MAP, RR@10, NDCG@10, NDCG@1000],
+        #     save_dir="results",
+        #     save_mode="reuse",
+        #     # batch_size=5000,
+        #     # correction='bonferroni',
+        #     verbose=True,
+        #     baseline=0,
+        #     names=["trec_q", "trec_d"]
+        # )
 
         
-        print(cmp_res)
+        # print(cmp_res)
 
-        try:
-            cmp_res.to_csv(f"results/trec_q_d_results.csv")
-        except:
-            print("Could not save to csv")
+        # try:
+        #     cmp_res.to_csv(f"results/trec_q_d_results.csv")
+        # except:
+        #     print("Could not save to csv")
 
-        # Experiment 2: Q (removed) vs D (removed) vs PAD
+        # Experiment 2: Q vs Q (removed) vs D (removed) vs PAD
         cmp_res = pt.Experiment(
-            [None] * 3,
+            [None] * 4,
             topic,
             qrels,
             filter_by_qrels=True,
@@ -240,10 +240,10 @@ def main():
             save_dir="results",
             save_mode="reuse",
             # batch_size=5000,
-            # correction='bonferroni',
+            correction='bonferroni',
             verbose=True,
             baseline=0,
-            names=["trec_q_removed", "trec_d_removed", "trec_pad"]
+            names=["trec_q", "trec_q_removed", "trec_d_removed", "trec_pad"]
         )
 
         

@@ -13,6 +13,7 @@ pytcolbert = ColBERTFactory("http://www.dcs.gla.ac.uk/~craigm/ecir2021-tutorial/
 topics, qrels = process_ds()
 
 cmp_names = [
+	"trec_no_pruning",
 	"trec_pruned_special_tokens",
 	"trec_pruned_stopwords_and_special_tokens",
 ]
