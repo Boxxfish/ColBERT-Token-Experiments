@@ -8,12 +8,6 @@ from ir_measures import RR, NDCG, MAP
 from nltk.corpus import stopwords
 from trec_utils import process_ds
 
-# Argparse stuff
-from argparse import ArgumentParser
-parser = ArgumentParser()
-parser.add_argument("--no-pruning", action="store_true")
-args = parser.parse_args()
-
 # Tokenization stuff
 from transformers import BertTokenizerFast
 tokenizer = BertTokenizerFast.from_pretrained("bert-base-uncased")
@@ -49,15 +43,11 @@ topic, qrels = process_ds()
 # BERT token pruned calculations
 ################################
 
-# Token IDs.
+# Setting 1: Only prune special tokens.
 Q = "[unused0]"
 prune_tokens = [Q, "[SEP]", "[MASK]", "[CLS]"]
 prune_set = set(tokenizer.convert_tokens_to_ids(prune_tokens))
-if args.no_pruning:
-    pass
-else:
-    tokenized_ids: list = list(set(sum(tokenizer(stopwords.words("english"), add_special_tokens=False).input_ids, [])))
-    prune_set = prune_set.union(set(tokenized_ids))
+
 prune_tokens_str = tokenizer.convert_ids_to_tokens(list(prune_set))
 
 dense_e2e_bert_pruned = pytcolbert.end_to_end(prune_set, prune_queries=True, prune_documents=False)
@@ -72,8 +62,27 @@ pt.Experiment(
     save_mode="reuse",
     batch_size=10000,
     verbose=True,
-    names=["trec_" + ("pruned_stopwords_and_special_tokens" if not args.no_pruning else "pruned_special_tokens")]
+    names=["trec_pruned_special_tokens"]
 )
 
 del dense_e2e_bert_pruned
 
+# Setting 2: Prune special tokens and stopwords.
+tokenized_ids: list = list(set(sum(tokenizer(stopwords.words("english"), add_special_tokens=False).input_ids, [])))
+prune_set = prune_set.union(set(tokenized_ids))
+prune_tokens_str = tokenizer.convert_ids_to_tokens(list(prune_set))
+
+dense_e2e_bert_pruned = pytcolbert.end_to_end(prune_set, prune_queries=True, prune_documents=False)
+print(f"Experiment: Tokens to prune: {prune_tokens_str}")
+pt.Experiment(
+    [dense_e2e_bert_pruned],
+    topic,
+    qrels,
+    filter_by_qrels=True,
+    eval_metrics=[MAP, RR@10, NDCG@10, NDCG@1000],
+    save_dir="results",
+    save_mode="reuse",
+    batch_size=10000,
+    verbose=True,
+    names=["trec_pruned_stopwords_and_special_tokens"]
+)
