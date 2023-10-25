@@ -23,7 +23,7 @@ cmp_res = pt.Experiment(
     topics,
     qrels,
     filter_by_qrels=True,
-    eval_metrics=[MAP, RR@10, NDCG@10, NDCG@1000],
+    eval_metrics=[MAP(rel=1), MAP(rel=2), MAP(rel=3), RR(rel=1)@10, RR(rel=2)@10, RR(rel=3)@10, NDCG@10, NDCG@1000],
     save_dir="results",
     save_mode="reuse",
     # batch_size=5000,

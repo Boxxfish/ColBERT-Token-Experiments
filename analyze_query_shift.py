@@ -33,36 +33,64 @@ def main():
     if args.experiment_compare_dists:
         print("Running cosine distance experiment...")
         what_is_ids = tokenizer("what is")["input_ids"][1:-1]
-        all_dists = []
-        for i in tqdm(range(len(metadata))):
-            query_data = metadata[i]
-            query = query_data["query"]
-            qids = all_qids[i]
-            sep_idx = np.where(qids == SEP)[0][0]
-            
-            if not (qids[2] == what_is_ids[0] and qids[3] == what_is_ids[1]):
-                continue
+        
+        def get_all_dists(only_what_is: bool, include_example: bool=True) -> list[list[float]]:
+            all_dists = []
+            for i in tqdm(range(len(metadata))):
+                query_data = metadata[i]
+                query = query_data["query"]
+                qids = all_qids[i]
+                sep_idx = np.where(qids == SEP)[0][0]
+                
+                # Checks that the first two tokens are "what" and "is".
+                if only_what_is:
+                    if not (qids[2] == what_is_ids[0] and qids[3] == what_is_ids[1]):
+                        continue
+                
+                # Checks that "example" is in the query
+                if not include_example:
+                    if "example" in query:
+                        continue
 
-            # A valid query is between 3 to 8 tokens, including "what is".
-            # Restricting the length prevents very long queries from accidentally drifting semantically.
-            if not (sep_idx > (2 + 3) and sep_idx <= (2 + 8)):
-                continue
+                # A valid query is between 3 to 8 tokens, including "what is".
+                # Restricting the length prevents very long queries from accidentally drifting semantically.
+                if not (sep_idx > (2 + 3) and sep_idx <= (2 + 8)):
+                    continue
 
-            q_embs_before_current = q_embs_before[i]
-            q_embs_after_current = q_embs_after[i]
-            q_embs_after_fixed = shift_query_data(q_embs_after_current, sep_idx)
+                q_embs_before_current = q_embs_before[i]
+                q_embs_after_current = q_embs_after[i]
+                q_embs_after_fixed = shift_query_data(q_embs_after_current, sep_idx)
 
-            dists = np.diag(1 - q_embs_before_current @ q_embs_after_fixed.T)
-            selected_dists = dists[[0, 1, 2, 4, sep_idx, 12, 31]]
-            all_dists.append(selected_dists)
-        print("Number of samples:", len(all_dists))
-        all_dists = np.stack(all_dists, 0)
+                dists = np.diag(1 - q_embs_before_current @ q_embs_after_fixed.T)
+                selected_dists = dists[[0, 1, 2, 4, sep_idx, 12, 31]]
+                all_dists.append(selected_dists)
+            return all_dists
+
+        all_dists_what_is = get_all_dists(True)
+        all_dists_all = get_all_dists(False)
+        print("Number of samples (what is):", len(all_dists_what_is))
+        print("Number of samples (all):", len(all_dists_all))
+        all_dists_what_is = np.stack(all_dists_what_is, 0)
+        all_dists_all = np.stack(all_dists_all, 0)
         plt.title("Cosine Distance Between Original and Shifted Representation")
-        plt.violinplot(all_dists)
-        plt.xticks(list(range(1, 8)), ["CLS", "Q", "QUERY:3", "QUERY:5", "SEP", "MASK:13", "MASK:32"])
-        plt.xlabel("Token")
-        plt.ylabel("Cosine Distance")
-        plt.savefig("cosine_dist_experiment.png")
+        fig, axs = plt.subplots(1, 2, sharey=False)
+        fig.set_figwidth(14)
+
+        axs[0].violinplot(all_dists_what_is)
+        axs[0].set_xticks(list(range(1, 8)), ["CLS", "Q", "QUERY:3", "QUERY:5", "SEP", "MASK:13", "MASK:32"])
+        axs[0].set_ylabel("Cosine Distance")
+        
+        axs[1].violinplot(all_dists_all)
+        axs[1].set_xticks(list(range(1, 8)), ["CLS", "Q", "QUERY:3", "QUERY:5", "SEP", "MASK:13", "MASK:32"])
+        # axs[1].set_ylabel("Cosine Distance")
+
+        plt.savefig("cosine_dist_experiment.pdf", bbox_inches="tight")
+
+        # Compute variance
+        all_dists_what_is_no_example = get_all_dists(True, False)
+        decs = 8
+        print("With example:", np.trunc(np.var(np.stack(all_dists_what_is, 0), axis=0) * 10**decs) / 10**decs)
+        print("No example:", np.trunc(np.var(np.stack(all_dists_what_is_no_example, 0), axis=0) * 10**decs) / 10**decs)
         quit()
 
     q_idx = 5
