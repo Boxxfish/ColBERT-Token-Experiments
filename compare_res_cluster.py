@@ -5,6 +5,7 @@ if not pt.started():
 from pyterrier_colbert.ranking import ColBERTFactory
 from ir_measures import MAP, RR, NDCG
 from trec_utils import process_ds
+import metrics
 
 #create a ColBERT ranking factory based on the pretrained checkpoint
 pytcolbert = ColBERTFactory("http://www.dcs.gla.ac.uk/~craigm/ecir2021-tutorial/colbert_model_checkpoint.zip", 
@@ -23,7 +24,7 @@ cmp_res = pt.Experiment(
     topics,
     qrels,
     filter_by_qrels=True,
-    eval_metrics=[MAP(rel=1), MAP(rel=2), MAP(rel=3), RR(rel=1)@10, RR(rel=2)@10, RR(rel=3)@10, NDCG@10, NDCG@1000],
+    eval_metrics=metrics.eval_metrics,
     save_dir="results",
     save_mode="reuse",
     # batch_size=5000,
