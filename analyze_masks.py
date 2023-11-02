@@ -22,6 +22,7 @@ def main():
     parser.add_argument("--experiment-adapt-masks", action="store_true")
     parser.add_argument("--visualize-adapt-masks", action="store_true")
     parser.add_argument("--visualize-query-masks", action="store_true")
+    parser.add_argument("--visualize-contiguous", action="store_true")
     args = parser.parse_args()
     
 
@@ -171,6 +172,60 @@ def main():
         plt.title(f"With vs Without MASKs:\n\"{query}\"", fontdict={"size": 8})
         plt.legend()
         plt.savefig("with_vs_without_masks.png")
+
+    if args.visualize_contiguous:
+        # Create ColBERT
+        pytcolbert = ColBERTFactory("http://www.dcs.gla.ac.uk/~craigm/ecir2021-tutorial/colbert_model_checkpoint.zip", 
+                            "./trec_index", "trec", gpu=True)
+        topic, qrels = process_ds()
+
+        # Create query embeddings for all cases
+        query = topic.iloc[22].query
+        Q, ids, masks = pytcolbert.args.inference.queryFromText([query], bsize=1, with_ids=True)
+        q_embs_normal = Q[0, :, :].cpu()
+
+        PAD, SEP, MASK = (0, 102, 103)
+
+        # MASKs before query text
+        batches = pytcolbert.args.inference.query_tokenizer.tensorize([query], bsize=1)
+        for (input_ids, _) in batches:
+            q_tok_ids = input_ids[0]
+            sep_index = torch.where(q_tok_ids.squeeze() == SEP)[0].item()
+            query_text = input_ids[0][2:sep_index + 1]
+            num_masks = 32 - (sep_index + 1)
+            input_ids[0][num_masks + 2:] = query_text
+            for i in range(2, num_masks + 2):
+                input_ids[0][i] = MASK
+
+        with torch.no_grad():
+            batchesEmbs = [pytcolbert.args.inference.query(input_ids, attention_mask, to_cpu=False) for input_ids, attention_mask in batches]
+            Q, q_tok_ids, masks = (torch.cat(batchesEmbs), torch.cat([ids for ids, _ in batches]), torch.cat([masks for _, masks in batches]))
+
+        q_embs_first_mask = Q[0, :, :].cpu()
+
+        tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+        q_tok_ids = ids[0]
+        qtoks = [tok if tok != "[unused0]" else "[Q]" for tok in tokenizer.convert_ids_to_tokens(q_tok_ids)]
+
+        with open("pca_2d.pkl", "rb") as f:
+            pca = pickle.load(f)
+        xformed_before = pca.transform(q_embs_normal)
+        xformed_after = pca.transform(q_embs_first_mask)
+        plt.scatter(xformed_before[:sep_index + 1, 0], xformed_before[:sep_index + 1, 1], label="before", alpha=0.5)
+        plt.scatter(xformed_after[:2, 0], xformed_after[:2, 1], label="after", alpha=0.5)
+        plt.scatter(xformed_after[num_masks + 2:, 0], xformed_after[num_masks + 2:, 1], label="after", alpha=0.5)
+        for i in range(sep_index + 1):
+            point = xformed_before[i]
+            plt.annotate(qtoks[i], point)
+        for i in range(2):
+            point = xformed_after[i]
+            plt.annotate(qtoks[i], point)
+        for i in range(2, 32 - num_masks):
+            point = xformed_after[num_masks + i]
+            plt.annotate(qtoks[i], point)
+        plt.title(f"Normal vs MASKs First:\n\"{query}\"", fontdict={"size": 8})
+        plt.legend()
+        plt.savefig("normal_vs_first_masks.png")
 
 if __name__ == "__main__":
     main()
