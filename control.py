@@ -15,33 +15,23 @@ msmarco_ds = pt.get_dataset("msmarco_passage")
 # Get list of usable queries that have a corresponding relevant in our limited index
 qids = msmarco_ds.get_qrels("dev")
 
-cmp_names = [
-	"no_pruning", 
-    '[CLS]_[SEP]_prune_query_False_prune_doc_True', 
-    '[CLS]_[SEP]_prune_query_True_prune_doc_False',
-    '[CLS]_[SEP]_prune_query_True_prune_doc_True',
-    '[CLS]_[SEP]_prune_query_True_prune_doc_True'
-]
+######################
+# Control Calculations
+######################
+dense_e2e = pytcolbert.end_to_end()
 
-cmp_res = pt.Experiment(
-    [None] * len(cmp_names),
+print()
+print("No Pruning Experiment...")
+pt.Experiment(
+    [dense_e2e],
     msmarco_ds.get_topics("dev"),
     msmarco_ds.get_qrels("dev"),
-    filter_by_qrels=True,
-    eval_metrics=["map", RR@1, RR@5, RR@10, RR@20],
+    eval_metrics=["map", RR@10],
     save_dir="results",
     save_mode="reuse",
-    # batch_size=5000,
-    correction='bonferroni',
+    batch_size=5000,
     verbose=True,
-    baseline=0,
-    names=cmp_names
+    names=["no_pruning"]
 )
 
-print(cmp_res)
-
-try:
-	cmp_res.to_csv(f"results/[CLS]_[SEP]-all_cmp.csv")
-except:
-	print("Could not save to csv")
-
+del dense_e2e
