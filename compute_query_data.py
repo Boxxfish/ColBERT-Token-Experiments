@@ -1,6 +1,6 @@
 """
 For a given number of queries...
- 1. Uses BM25 to collect the top-k number of relevant documents.
+ 1. Uses end-to-end ColBERT to collect the top-k number of relevant documents.
  2. For each query token...
      a. Finds the doc token selected and MaxSim score.
      b. Saves the contextualized embedding.
