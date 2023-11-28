@@ -127,3 +127,18 @@ def test_query_mod(
 
         results.append(result)
     return results
+
+def set_retreive_change(
+        query: str,
+        factory: ColBERTFactory,
+        mod_qtoks: Optional[Callable[[Tensor], Tensor]] = None,
+        mod_qembs: Optional[Callable[[Tensor, Tensor, Tensor], tuple[Tensor, Tensor, Tensor]]] = None,
+    ) -> tuple[set[int], set[int]]:
+    """
+    Runs a query before and after modifications are made.
+    """
+    before_retriever = factory.set_retrieve(mod_qtoks=mod_qtoks, mod_qembs=mod_qembs)
+    after_retriever = factory.set_retrieve(mod_qtoks=mod_qtoks, mod_qembs=mod_qembs)
+    docids1 = set(before_retriever.search(query).docids)
+    docids2 = set(after_retriever.search(query).docids)
+    return (docids1, docids2)
