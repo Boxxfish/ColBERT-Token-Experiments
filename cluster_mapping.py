@@ -1,6 +1,8 @@
 # Initialize pyterrier
 import pandas as pd
 import pyterrier as pt
+
+from mod_utils import remap_special_toks_or_remap_masks
 if not pt.started():
     pt.init()
 from pyterrier_colbert.ranking import ColBERTFactory
@@ -59,7 +61,12 @@ for op in [True, False]:
         remap_special_toks = True
     else:
         remap_masks = True
-    dense_e2e_bert_pruned = pytcolbert.end_to_end(set(), prune_queries=False, prune_documents=False, remap_special_toks=remap_special_toks, remap_masks=remap_masks)
+    dense_e2e_bert_pruned = pytcolbert.end_to_end(
+        set(),
+        prune_queries=False,
+        prune_documents=False,
+        mod_qembs=remap_special_toks_or_remap_masks(remap_special_toks, remap_masks)
+    )
     if remap_special_toks:
         name = "trec_remap_special_toks"
     elif remap_masks:

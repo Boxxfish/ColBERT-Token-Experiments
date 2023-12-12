@@ -59,8 +59,6 @@ def main():
                 logits_per_token.append(logits.item())
                 # print("MASK", target_mask, ",", tokenizer.convert_ids_to_tokens(q_tok_ids[i].item()), ":", logits[i])
             all_logits.append(logits_per_token)
-        
-
 
 
 

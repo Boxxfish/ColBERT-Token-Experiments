@@ -6,12 +6,13 @@ from argparse import ArgumentParser
 import pickle
 from matplotlib import pyplot as plt
 import pyterrier as pt
+from mod_utils import replace_q
 
 from trec_utils import process_ds
 if not pt.started():
     pt.init()
 from pyterrier_colbert.ranking import ColBERTFactory
-from ir_measures import MAP, NDCG, RR
+from metrics import eval_metrics
 from tqdm import tqdm
 import numpy as np
 import json
@@ -118,117 +119,117 @@ def main():
         topic, qrels = process_ds()
 
         # Condition 1: Control
-        # dense_e2e_bert_pruned = pytcolbert.end_to_end(set(), prune_queries=False, prune_documents=False)
-        # print("Using Q (Control)...")
-        # pt.Experiment(
-        #     [dense_e2e_bert_pruned],
-        #     topic,
-        #     qrels,
-        #     filter_by_qrels=True,
-        #     eval_metrics=[MAP, RR@10, NDCG@10, NDCG@1000],
-        #     save_dir="results",
-        #     save_mode="reuse",
-        #     batch_size=10000,
-        #     verbose=True,
-        #     names=["trec_q"]
-        # )
-        # del dense_e2e_bert_pruned
+        dense_e2e_bert_pruned = pytcolbert.end_to_end(set(), prune_queries=False, prune_documents=False)
+        print("Using Q (Control)...")
+        pt.Experiment(
+            [dense_e2e_bert_pruned],
+            topic,
+            qrels,
+            filter_by_qrels=True,
+            eval_metrics=eval_metrics,
+            save_dir="results",
+            save_mode="reuse",
+            batch_size=10000,
+            verbose=True,
+            names=["trec_q"]
+        )
+        del dense_e2e_bert_pruned
         
         # Condition 2: D
         D = 2
-        # dense_e2e_bert_pruned = pytcolbert.end_to_end(set(), prune_queries=False, prune_documents=False, replace_q=D)
-        # print("Using D...")
-        # pt.Experiment(
-        #     [dense_e2e_bert_pruned],
-        #     topic,
-        #     qrels,
-        #     filter_by_qrels=True,
-        #     eval_metrics=[MAP, RR@10, NDCG@10, NDCG@1000],
-        #     save_dir="results",
-        #     save_mode="reuse",
-        #     batch_size=10000,
-        #     verbose=True,
-        #     names=["trec_d"]
-        # )
-        # del dense_e2e_bert_pruned
+        dense_e2e_bert_pruned = pytcolbert.end_to_end(set(), prune_queries=False, prune_documents=False, mod_qtoks=replace_q(D))
+        print("Using D...")
+        pt.Experiment(
+            [dense_e2e_bert_pruned],
+            topic,
+            qrels,
+            filter_by_qrels=True,
+            eval_metrics=eval_metrics,
+            save_dir="results",
+            save_mode="reuse",
+            batch_size=10000,
+            verbose=True,
+            names=["trec_d"]
+        )
+        del dense_e2e_bert_pruned
         
         # Condition 3: PAD
-        # PAD = 0
-        # dense_e2e_bert_pruned = pytcolbert.end_to_end({PAD}, prune_queries=True, prune_documents=False, replace_q=PAD)
-        # print("Using PAD, then removing PAD...")
-        # pt.Experiment(
-        #     [dense_e2e_bert_pruned],
-        #     topic,
-        #     qrels,
-        #     filter_by_qrels=True,
-        #     eval_metrics=[MAP, RR@10, NDCG@10, NDCG@1000],
-        #     save_dir="results",
-        #     save_mode="reuse",
-        #     batch_size=10000,
-        #     verbose=True,
-        #     names=["trec_pad"]
-        # )
-        # del dense_e2e_bert_pruned
+        PAD = 0
+        dense_e2e_bert_pruned = pytcolbert.end_to_end({PAD}, prune_queries=True, prune_documents=False, mod_qtoks=replace_q(PAD))
+        print("Using PAD, then removing PAD...")
+        pt.Experiment(
+            [dense_e2e_bert_pruned],
+            topic,
+            qrels,
+            filter_by_qrels=True,
+            eval_metrics=eval_metrics,
+            save_dir="results",
+            save_mode="reuse",
+            batch_size=10000,
+            verbose=True,
+            names=["trec_pad"]
+        )
+        del dense_e2e_bert_pruned
 
         # Condition 4: D, but D is removed afterwards
-        # D = 2
-        # dense_e2e_bert_pruned = pytcolbert.end_to_end({D}, prune_queries=True, prune_documents=False, replace_q=D)
-        # print("Using D, then removing D...")
-        # pt.Experiment(
-        #     [dense_e2e_bert_pruned],
-        #     topic,
-        #     qrels,
-        #     filter_by_qrels=True,
-        #     eval_metrics=[MAP, RR@10, NDCG@10, NDCG@1000],
-        #     save_dir="results",
-        #     save_mode="reuse",
-        #     batch_size=10000,
-        #     verbose=True,
-        #     names=["trec_d_removed"]
-        # )
-        # del dense_e2e_bert_pruned
+        D = 2
+        dense_e2e_bert_pruned = pytcolbert.end_to_end({D}, prune_queries=True, prune_documents=False, mod_qtoks=replace_q(D))
+        print("Using D, then removing D...")
+        pt.Experiment(
+            [dense_e2e_bert_pruned],
+            topic,
+            qrels,
+            filter_by_qrels=True,
+            eval_metrics=eval_metrics,
+            save_dir="results",
+            save_mode="reuse",
+            batch_size=10000,
+            verbose=True,
+            names=["trec_d_removed"]
+        )
+        del dense_e2e_bert_pruned
 
         # Condition 6: Q, but Q is removed afterwards
-        # Q = 1
-        # dense_e2e_bert_pruned = pytcolbert.end_to_end({Q}, prune_queries=True, prune_documents=False)
-        # print("Using Q, then removing Q...")
-        # pt.Experiment(
-        #     [dense_e2e_bert_pruned],
-        #     topic,
-        #     qrels,
-        #     filter_by_qrels=True,
-        #     eval_metrics=[MAP, RR@10, NDCG@10, NDCG@1000],
-        #     save_dir="results",
-        #     save_mode="reuse",
-        #     batch_size=10000,
-        #     verbose=True,
-        #     names=["trec_q_removed"]
-        # )
-        # del dense_e2e_bert_pruned
+        Q = 1
+        dense_e2e_bert_pruned = pytcolbert.end_to_end({Q}, prune_queries=True, prune_documents=False)
+        print("Using Q, then removing Q...")
+        pt.Experiment(
+            [dense_e2e_bert_pruned],
+            topic,
+            qrels,
+            filter_by_qrels=True,
+            eval_metrics=eval_metrics,
+            save_dir="results",
+            save_mode="reuse",
+            batch_size=10000,
+            verbose=True,
+            names=["trec_q_removed"]
+        )
+        del dense_e2e_bert_pruned
 
         # Get results
-        # cmp_res = pt.Experiment(
-        #     [None] * 2,
-        #     topic,
-        #     qrels,
-        #     filter_by_qrels=True,
-        #     eval_metrics=[MAP, RR@10, NDCG@10, NDCG@1000],
-        #     save_dir="results",
-        #     save_mode="reuse",
-        #     # batch_size=5000,
-        #     # correction='bonferroni',
-        #     verbose=True,
-        #     baseline=0,
-        #     names=["trec_q", "trec_d"]
-        # )
+        cmp_res = pt.Experiment(
+            [None] * 2,
+            topic,
+            qrels,
+            filter_by_qrels=True,
+            eval_metrics=eval_metrics,
+            save_dir="results",
+            save_mode="reuse",
+            # batch_size=5000,
+            # correction='bonferroni',
+            verbose=True,
+            baseline=0,
+            names=["trec_q", "trec_d"]
+        )
 
         
-        # print(cmp_res)
+        print(cmp_res)
 
-        # try:
-        #     cmp_res.to_csv(f"results/trec_q_d_results.csv")
-        # except:
-        #     print("Could not save to csv")
+        try:
+            cmp_res.to_csv(f"results/trec_q_d_results.csv")
+        except:
+            print("Could not save to csv")
 
         # Experiment 2: Q vs Q (removed) vs D (removed) vs PAD
         cmp_res = pt.Experiment(
@@ -236,7 +237,7 @@ def main():
             topic,
             qrels,
             filter_by_qrels=True,
-            eval_metrics=[MAP, RR@10, NDCG@10, NDCG@1000],
+            eval_metrics=eval_metrics,
             save_dir="results",
             save_mode="reuse",
             # batch_size=5000,
