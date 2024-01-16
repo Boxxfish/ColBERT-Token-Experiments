@@ -31,7 +31,30 @@ eval_metrics = [MAP(rel=1), MAP(rel=2), MAP(rel=3), RR(rel=1)@10, RR(rel=2)@10, 
 ######################
 # Control Calculations
 ######################
-dense_e2e = pytcolbert.end_to_end(prune_queries=False, prune_documents=False)
+#dense_e2e = pytcolbert.end_to_end(prune_queries=False, prune_documents=False)
+
+dense_e2e_bert_pruned = pytcolbert.end_to_end(
+        set(),
+        prune_queries=False,
+        prune_documents=False,
+        mod_qembs=remap_special_toks_or_remap_masks(False, False, True)
+)
+name = "trec_remap_masks_to_terms"
+
+pt.Experiment(
+        [dense_e2e_bert_pruned],
+        topic,
+        qrels,
+        filter_by_qrels=True,
+        eval_metrics=eval_metrics,
+        save_dir="results",
+        save_mode="reuse",
+        batch_size=10000,
+        verbose=True,
+        names=[name]
+)
+
+exit(0)
 
 # print()
 print("No Pruning Experiment...")

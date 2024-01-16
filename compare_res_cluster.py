@@ -17,6 +17,7 @@ cmp_names = [
 	"trec_no_pruning",
 	"trec_remap_special_toks",
 	"trec_remap_masks",
+        "trec_remap_masks_to_terms",
 ]
 
 cmp_res = pt.Experiment(

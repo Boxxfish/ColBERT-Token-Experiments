@@ -19,19 +19,27 @@ def replace_q(replace_q_tok: int):
         return qtoks
     return _replace_q
 
-def remap_special_toks_or_remap_masks(remap_special_toks: bool, remap_masks: bool):
-    assert(not (remap_special_toks and remap_masks))
+def remap_special_toks_or_remap_masks(remap_special_toks: bool, remap_masks: bool, remap_masks_to_terms: bool):
+    assert(sum([remap_special_toks, remap_masks, remap_masks_to_terms]) <= 1)
     def _remap_special_toks_or_remap_masks(qtoks: torch.Tensor, qembs: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         # If remapping all special tokens, we also include SEP, Q, and CLS. Otherwise, we only remap MASKs.
         sep_index = torch.where(qtoks.squeeze() == SEP)[0].item()
         if remap_special_toks:
             remap_idxs = [0, 1] + list(range(sep_index, 32))
-        elif remap_masks:
+        elif remap_masks or remap_masks_to_terms:
             remap_idxs = list(range(sep_index + 1, 32))
         
-        remap_mask = torch.zeros(32, device=qtoks.device, dtype=torch.bool)
+        remap_mask = torch.zeros(32, device=qembs.device, dtype=torch.bool)
         for remap_idx in remap_idxs:
             remap_mask[remap_idx] = True
+
+        # If we're remapping masks to only query terms, set the remap mask to True on the special tokens
+        if remap_masks_to_terms:
+            remap_mask[0] = True
+            remap_mask[1] = True
+            remap_mask[sep_index] = True
+
+
         dists = qembs @ qembs.T # Shape: (32, 32)
         dists = torch.masked_fill(dists, remap_mask, -float("inf"))
         mapped_tok_idxs = torch.argmax(dists, 1)
@@ -120,7 +128,7 @@ def test_query_mod(
 
         masks = [False] * 32
         if mod_qembs:
-            q_tok_ids, Q_f[0], masks = mod_qembs(q_tok_ids, Q_f[0], masks)
+            q_tok_ids, Q_f[0] = mod_qembs(q_tok_ids, Q_f[0])
         result.masks = masks
         result.qembs_after_mod_qembs = Q_f[0].clone()
         result.qtoks_after_mod_qembs = q_tok_ids
