@@ -1,15 +1,12 @@
-from colbertv2.infra import Run, RunConfig, ColBERTConfig
-from colbertv2 import Indexer
-from pathlib import Path
+import pyterrier as pt
+if not pt.started():
+    pt.init()
+from pyterrier_colbert.indexing import ColBERTIndexer
 
 def main():
-    with Run().context(RunConfig(nranks=1, experiment="msmarco")):
-        config = ColBERTConfig(
-            nbits=2,
-            root="./v2_experiments",
-        )
-        indexer = Indexer(checkpoint=str((Path.home() / "colbertv2.0").absolute()), config=config)
-        indexer.index(name="msmarco.nbits=2", collection=str((Path.home() / "msmarco/collection.tsv").absolute()))
+    msmarco_ds = pt.get_dataset("irds:msmarco-passage")
+    indexer = ColBERTIndexer("../colbertv2.dnn", "./msmarco_index_v2", "msmarco", 16)
+    indexref = indexer.index(msmarco_ds.get_corpus_iter())
 
 
 if __name__ == "__main__":
