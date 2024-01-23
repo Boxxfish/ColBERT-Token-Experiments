@@ -19,13 +19,15 @@ def shift_query_data(q_embs_after_current: np.ndarray, sep_idx: int):
 def main():
     parser = ArgumentParser()
     parser.add_argument("--experiment-compare-dists", action="store_true")
+    parser.add_argument("--v2", action="store_true")
     args = parser.parse_args()
 
     # Load data
-    q_embs_before = np.load("shift_artifacts/q_embs_before.npy")
-    q_embs_after = np.load("shift_artifacts/q_embs_after.npy")
-    all_qids = np.load("shift_artifacts/qids.npy")
-    with open("shift_artifacts/swap_metadata.json", "r") as f:
+    file_suffix = "_v2" if args.v2 else ""
+    q_embs_before = np.load(f"shift_artifacts/q_embs_before{file_suffix}.npy")
+    q_embs_after = np.load(f"shift_artifacts/q_embs_after{file_suffix}.npy")
+    all_qids = np.load(f"shift_artifacts/qids{file_suffix}.npy")
+    with open(f"shift_artifacts/swap_metadata{file_suffix}.json", "r") as f:
         metadata = json.load(f)
     tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
     SEP, MASK = (102, 103)
@@ -122,7 +124,7 @@ def main():
     # qids_temp[3] = qids[sep_idx - 2]
     # print(qids_temp)
 
-    with open("pca_2d.pkl", "rb") as f:
+    with open(f"pca_2d{file_suffix}.pkl", "rb") as f:
         pca = pickle.load(f)
     xformed_before = pca.transform(q_embs_before_current)
     xformed_after = pca.transform(q_embs_after_fixed)

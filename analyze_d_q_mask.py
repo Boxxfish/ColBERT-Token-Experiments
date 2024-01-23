@@ -110,7 +110,7 @@ def main():
                 plt.annotate(i + 1, point)
         plt.title(query, fontdict={"size": 8})
         plt.legend()
-        plt.savefig(f"scatter_{args.analyze}.png")
+        plt.savefig(f"scatter_{args.analyze}.pdf")
 
     if args.experiment:
         pytcolbert = ColBERTFactory("http://www.dcs.gla.ac.uk/~craigm/ecir2021-tutorial/colbert_model_checkpoint.zip", 

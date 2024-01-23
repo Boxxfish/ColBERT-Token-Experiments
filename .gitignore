@@ -1,4 +1,6 @@
 # Generated files
+msmarco_index_v2/
+trec_index_v2/
 msmarco_index/
 trec_index/
 msmarco_index_sm/

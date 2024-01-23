@@ -10,12 +10,31 @@ from transformers import AutoTokenizer
 from tqdm import tqdm
 from argparse import ArgumentParser
 import pyterrier as pt
+from mod_utils import PAD, SEP, MASK
 
 from trec_utils import process_ds
 if not pt.started():
     pt.init()
 from pyterrier_colbert.ranking import ColBERTFactory
 import metrics
+
+def remove_masks(kept_masks: str):
+    def _remove_masks(qtoks: torch.Tensor) -> torch.Tensor:
+        sep_index = torch.where(qtoks.squeeze() == SEP)[0].item()
+        num_masks = 32 - (sep_index + 1)
+        if kept_masks == "all":
+            masks_to_remove = 0
+        elif kept_masks == "half":
+            masks_to_remove = num_masks // 2
+        elif kept_masks == "none":
+            masks_to_remove = num_masks
+        masks_left = num_masks - masks_to_remove
+        replace_idxs = list(range(sep_index + 1 + masks_left, 32))
+        
+        for i in replace_idxs:
+            qtoks[i] = PAD
+        return qtoks
+    return _remove_masks
 
 def main():
     parser = ArgumentParser()
@@ -34,25 +53,25 @@ def main():
 
         topic, qrels = process_ds()
 
-        PAD = 0
-        print("Replacing half of the MASKs with PAD, then pruning PAD...")
-        dense_e2e_bert_pruned = pytcolbert.end_to_end({PAD}, prune_queries=True, prune_documents=False, remove_masks="half")
-        pt.Experiment(
-            [dense_e2e_bert_pruned],
-            topic,
-            qrels,
-            filter_by_qrels=True,
-            eval_metrics=metrics.eval_metrics,
-            save_dir="results",
-            save_mode="reuse",
-            batch_size=10000,
-            verbose=True,
-            names=["trec_remove_masks_half"]
-        )
-        del dense_e2e_bert_pruned
-        
+        for kept_masks in ["half", "none"]:
+            print(f"Keeping {kept_masks} of the MASKs and replacing the rest with PAD, then pruning PAD...")
+            dense_e2e_bert_pruned = pytcolbert.end_to_end({PAD}, prune_queries=True, prune_documents=False, mod_qtoks=remove_masks(kept_masks))
+            pt.Experiment(
+                [dense_e2e_bert_pruned],
+                topic,
+                qrels,
+                filter_by_qrels=True,
+                eval_metrics=metrics.eval_metrics,
+                save_dir="results",
+                save_mode="reuse",
+                batch_size=10000,
+                verbose=True,
+                names=[f"trec_keep_masks_{kept_masks}"]
+            )
+            del dense_e2e_bert_pruned
+
         cmp_res = pt.Experiment(
-            [None] * 2,
+            [None] * 3,
             topic,
             qrels,
             filter_by_qrels=True,
@@ -63,7 +82,7 @@ def main():
             correction='bonferroni',
             verbose=True,
             baseline=0,
-            names=["trec_no_pruning", "trec_remove_masks_half"]
+            names=["trec_no_pruning", "trec_keep_masks_half", "trec_keep_masks_none"]
         )
 
         print(cmp_res)
@@ -72,6 +91,7 @@ def main():
             cmp_res.to_csv(f"results/trec_adapt_masks.csv")
         except:
             print("Could not save to csv")
+        exit()
 
     if args.visualize_adapt_masks:
         # Create ColBERT
@@ -84,7 +104,6 @@ def main():
         Q, ids, masks = pytcolbert.args.inference.queryFromText([query], bsize=1, with_ids=True)
         q_embs_normal = Q[0, :, :].cpu()
 
-        PAD, SEP = (0, 102)
         batches = pytcolbert.args.inference.query_tokenizer.tensorize([query], bsize=1)
         for (input_ids, _) in batches:
             q_tok_ids = input_ids[0]
@@ -139,7 +158,6 @@ def main():
         Q, ids, masks = pytcolbert.args.inference.queryFromText([query], bsize=1, with_ids=True)
         q_embs_normal = Q[0, :, :].cpu()
 
-        PAD, SEP = (0, 102)
         batches = pytcolbert.args.inference.query_tokenizer.tensorize([query], bsize=1)
         for (input_ids, _) in batches:
             q_tok_ids = input_ids[0]
@@ -171,7 +189,7 @@ def main():
             plt.annotate(qtoks[i], point)
         plt.title(f"With vs Without MASKs:\n\"{query}\"", fontdict={"size": 8})
         plt.legend()
-        plt.savefig("with_vs_without_masks.png")
+        plt.savefig("with_vs_without_masks.pdf")
 
     if args.visualize_contiguous:
         # Create ColBERT
@@ -183,8 +201,6 @@ def main():
         query = topic.iloc[22].query
         Q, ids, masks = pytcolbert.args.inference.queryFromText([query], bsize=1, with_ids=True)
         q_embs_normal = Q[0, :, :].cpu()
-
-        PAD, SEP, MASK = (0, 102, 103)
 
         # MASKs before query text
         batches = pytcolbert.args.inference.query_tokenizer.tensorize([query], bsize=1)
