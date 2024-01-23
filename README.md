@@ -1,7 +1,4 @@
-# ColBERT Independent Study Code Deliverables
-(Formerly IR 2023 Final Project)
-
-Repo for the ColBERT indepdendent study.
+# Experiments for "Behind the [MASK]: An Analysis of Structural Tokens in ColBERT"
 
 ## Installation
 Make sure you've cloned the submodules as well. Install the environment with the following command:
@@ -20,16 +17,26 @@ pip install -e .
 
 ## Running Experiments
 
+### Using ColBERT v2
+
+Before ColBERT v2 can be used, it has to be converted into a `.dnn` checkpoint. This can be done with the following commands:
+
+```bash
+wget https://downloads.cs.stanford.edu/nlp/data/colbert/colbertv2/colbertv2.0.tar.gz    # Downloads the official ColBERTv2 checkpoint
+unzip colbertv2.0.tar.gz
+python v2_to_v1_chkpt.py --v2-dir ./colbertv2.0 --out-file ../colbertv2.dnn             # The experiments expect the checkpoint to be in the outer directory
+```
+
 ### Indexing
 
 We use the MS MARCO and TREC 2019-2020 corpuses for our experiments. The TREC 2019-2020 index should technically
 contain the same documents as the MS MARCO index. Indexing can be performed with the following.
 
 ```bash
-python index.py         # For MS MARCO
-python index_trec.py    # For TREC 2019-2020
-python index_v2.py         # For MS MARCO (ColBERT v2)
-python index_trec_v2.py    # For TREC 2019-2020 (ColBERT v2)
+python index.py             # For MS MARCO
+python index_trec.py        # For TREC 2019-2020
+python index_v2.py          # For MS MARCO (ColBERT v2)
+python index_trec_v2.py     # For TREC 2019-2020 (ColBERT v2)
 ```
 
 ### Visualization Tool
