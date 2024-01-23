@@ -1,23 +1,25 @@
-# Initialize pyterrier
 import pyterrier as pt
+from mod_utils import load_colbert
 if not pt.started():
     pt.init()
-from pyterrier_colbert.ranking import ColBERTFactory
-from ir_measures import MAP, RR, NDCG
 from trec_utils import process_ds
 import metrics
 
-#create a ColBERT ranking factory based on the pretrained checkpoint
-pytcolbert = ColBERTFactory("http://www.dcs.gla.ac.uk/~craigm/ecir2021-tutorial/colbert_model_checkpoint.zip", 
-                            "./trec_index", "trec", gpu=True)
+from argparse import ArgumentParser
+parser = ArgumentParser()
+parser.add_argument("--v2")
+args = parser.parse_args()
+suffix = "_v2" if args.v2 else ""
+
+pytcolbert = load_colbert("trec", args.v2)
 
 topics, qrels = process_ds()
 
 cmp_names = [
-	"trec_no_pruning",
-	"trec_remap_special_toks",
-	"trec_remap_masks",
-        "trec_remap_masks_to_terms",
+	f"trec_baseline{suffix}",
+	f"trec_remap_special_toks{suffix}",
+	f"trec_remap_masks{suffix}",
+    f"trec_remap_masks_to_terms{suffix}",
 ]
 
 cmp_res = pt.Experiment(
@@ -28,7 +30,6 @@ cmp_res = pt.Experiment(
     eval_metrics=metrics.eval_metrics,
     save_dir="results",
     save_mode="reuse",
-    # batch_size=5000,
     correction='bonferroni',
     verbose=True,
     baseline=0,

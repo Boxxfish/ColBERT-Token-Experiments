@@ -10,9 +10,19 @@ import numpy as np
 import torch
 import json
 
+from argparse import ArgumentParser
+
 def main():
+    parser = ArgumentParser()
+    parser.add_argument("--v2", action="store_true")
+    args = parser.parse_args()
+
     # Boilerplate loading stuff
-    pytcolbert = ColBERTFactory("http://www.dcs.gla.ac.uk/~craigm/ecir2021-tutorial/colbert_model_checkpoint.zip", "./msmarco_index", "msmarco", gpu=True)
+    if not args.v2:
+        pytcolbert = ColBERTFactory("http://www.dcs.gla.ac.uk/~craigm/ecir2021-tutorial/colbert_model_checkpoint.zip", "./msmarco_index", "msmarco", gpu=True)
+    else:
+        pytcolbert = ColBERTFactory("../colbertv2.dnn", "./msmarco_index_v2", "msmarco", gpu=True)
+
     msmarco_ds = pt.get_dataset("msmarco_passage")
     topic = msmarco_ds.get_topics("dev")
     SEP = 102
@@ -47,10 +57,11 @@ def main():
         })
     
     # Save arrays
-    np.save("shift_artifacts/q_embs_before.npy", np.stack(all_q_embs_before))
-    np.save("shift_artifacts/q_embs_after.npy", np.stack(all_q_embs_after))
-    np.save("shift_artifacts/qids.npy", np.stack(all_qids))
-    with open("shift_artifacts/swap_metadata.json", "w") as f:
+    file_suffix = "_v2" if args.v2 else ""
+    np.save(f"shift_artifacts/q_embs_before{file_suffix}.npy", np.stack(all_q_embs_before))
+    np.save(f"shift_artifacts/q_embs_after{file_suffix}.npy", np.stack(all_q_embs_after))
+    np.save(f"shift_artifacts/qids{file_suffix}.npy", np.stack(all_qids))
+    with open(f"shift_artifacts/swap_metadata{file_suffix}.json", "w") as f:
         json.dump(metadata, f)
 
 if __name__ == "__main__":

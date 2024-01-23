@@ -10,6 +10,25 @@ if not pt.started():
     pt.init()
 from pyterrier_colbert.ranking import ColBERTFactory
 
+def load_colbert(index: str, v2: bool = False) -> ColBERTFactory:
+    if v2:
+        chkpt = "../colbertv2.dnn"
+        suffix = "_index_v2"
+    else:
+        chkpt = "http://www.dcs.gla.ac.uk/~craigm/ecir2021-tutorial/colbert_model_checkpoint.zip"
+        suffix = ""
+    
+    if index == "trec":
+        return ColBERTFactory(chkpt, 
+                        f"./trec{suffix}", "trec", gpu=True)
+    elif index == "msmarco":
+        return ColBERTFactory(chkpt, 
+                        f"./msmarco{suffix}", "msmarco", gpu=True)
+
+    else:
+        raise RuntimeError("Index must be \"msmarco\" or \"trec\".")
+
+
 # Special token IDs
 PAD, Q, CLS, SEP, MASK = (0, 1, 101, 102, 103)
 
