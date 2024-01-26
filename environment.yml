@@ -39,6 +39,7 @@ dependencies:
   - numpy=1.24.3=py311h64a7726_0
   - openssl=3.1.0=hd590300_1
   - parso=0.8.3=pyhd3eb1b0_0
+  - pcre=*
   - pexpect=4.8.0=pyhd3eb1b0_3
   - pickleshare=0.7.5=pyhd3eb1b0_1003
   - pip=23.0.1=py311h06a4308_0
@@ -138,7 +139,7 @@ dependencies:
       - pyasn1==0.5.0
       - pyasn1-modules==0.3.0
       - pyautocorpus==0.1.9
-      - pyjnius==1.4.2
+      - pyjnius==1.6.1
       - pyjwt==2.6.0
       - pyparsing==3.0.9
       - ./pyterrier_colbert

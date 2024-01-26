@@ -14,7 +14,7 @@ from argparse import ArgumentParser
 parser = ArgumentParser()
 # parser.add_argument("--remap-special-toks", action="store_true")
 # parser.add_argument("--remap-masks", action="store_true")
-parser.add_argument("--v2")
+parser.add_argument("--v2", action="store_true")
 args = parser.parse_args()
 suffix = "_v2" if args.v2 else ""
 
@@ -79,7 +79,7 @@ for op in [True, False]:
         set(),
         prune_queries=False,
         prune_documents=False,
-        mod_qembs=remap_special_toks_or_remap_masks(remap_special_toks, remap_masks)
+        mod_qembs=remap_special_toks_or_remap_masks(remap_special_toks, remap_masks, False)
     )
     if remap_special_toks:
         name = f"trec_remap_special_toks{suffix}"

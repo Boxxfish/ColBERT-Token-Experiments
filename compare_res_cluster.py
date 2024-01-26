@@ -7,7 +7,7 @@ import metrics
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
-parser.add_argument("--v2")
+parser.add_argument("--v2", action="store_true")
 args = parser.parse_args()
 suffix = "_v2" if args.v2 else ""
 
@@ -19,7 +19,7 @@ cmp_names = [
 	f"trec_baseline{suffix}",
 	f"trec_remap_special_toks{suffix}",
 	f"trec_remap_masks{suffix}",
-    f"trec_remap_masks_to_terms{suffix}",
+        f"trec_remap_masks_to_terms{suffix}",
 ]
 
 cmp_res = pt.Experiment(

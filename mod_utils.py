@@ -10,7 +10,11 @@ if not pt.started():
     pt.init()
 from pyterrier_colbert.ranking import ColBERTFactory
 
-def load_colbert(index: str, v2: bool = False) -> ColBERTFactory:
+# Terminal colors
+RED = "\033[31m"
+GREEN = "\033[32m"
+
+def load_colbert(index: str, v2: bool = False, gpu = False) -> ColBERTFactory:
     if v2:
         chkpt = "../colbertv2.dnn"
         suffix = "_index_v2"
@@ -20,10 +24,10 @@ def load_colbert(index: str, v2: bool = False) -> ColBERTFactory:
     
     if index == "trec":
         return ColBERTFactory(chkpt, 
-                        f"./trec{suffix}", "trec", gpu=True)
+                        f"./trec{suffix}", "trec", gpu=gpu)
     elif index == "msmarco":
         return ColBERTFactory(chkpt, 
-                        f"./msmarco{suffix}", "msmarco", gpu=True)
+                        f"./msmarco{suffix}", "msmarco", gpu=gpu)
 
     else:
         raise RuntimeError("Index must be \"msmarco\" or \"trec\".")
@@ -106,16 +110,19 @@ class TestResult:
     qembs_after_mod_qembs: Tensor
     # Query tokens after `mod_qembs`.
     qtoks_after_mod_qembs: list[int]
+    # Masks for self attention.
+    masks: list[bool]
 
-def get_model() -> ModelInference:
-    pytcolbert = ColBERTFactory("http://www.dcs.gla.ac.uk/~craigm/ecir2021-tutorial/colbert_model_checkpoint.zip", "./msmarco_index", "msmarco", gpu=True)
+def get_model(v2: bool) -> ModelInference:
+    pytcolbert = load_colbert("msmarco", v2)
     return pytcolbert.args.inference
 
 def test_query_mod(
         mod_qtoks: Optional[Callable[[Tensor], Tensor]] = None,
-        mod_qembs: Optional[Callable[[Tensor, Tensor, Tensor], tuple[Tensor, Tensor, Tensor]]] = None,
+        mod_qembs: Optional[Callable[[Tensor, Tensor], tuple[Tensor, Tensor]]] = None,
         test_queries: Optional[list[str]] = None,
-        model: Optional[ModelInference] = None
+        model: Optional[ModelInference] = None,
+        v2: bool = False,
     ) -> list[TestResult]:
     """
     Tests query modifications.
@@ -124,7 +131,7 @@ def test_query_mod(
         test_queries = DEFAULT_QUERIES
     
     if model is None:
-        model = get_model()
+        model = get_model(v2)
 
     results = []
     for query in test_queries:
@@ -132,28 +139,50 @@ def test_query_mod(
         result.query = query
         with torch.no_grad():
             batches = model.query_tokenizer.tensorize([query], bsize=1)
-            result.orig_qtoks = list(batches[0][0])
+            result.orig_qtoks = batches[0][0].squeeze().tolist()
             if mod_qtoks:
                 for (input_ids, _) in batches:
                     input_ids[0] = mod_qtoks(input_ids[0])
             batchesEmbs = [model.query(input_ids, attention_mask, to_cpu=False) for input_ids, attention_mask in batches]
-            Q, q_tok_ids, _ = (torch.cat(batchesEmbs), torch.cat([ids for ids, _ in batches]), torch.cat([masks for _, masks in batches]))
+            Q, q_tok_ids, qmasks = (torch.cat(batchesEmbs), torch.cat([ids for ids, _ in batches]), torch.cat([masks for _, masks in batches]))
         
         q_tok_ids = q_tok_ids[0].cpu()
         Q_f = Q[0:1, :, :]
 
-        result.qtoks_before_ctx = list(q_tok_ids)
+        result.qtoks_before_ctx = q_tok_ids.squeeze().tolist()
         result.qembs = Q_f[0].clone()
 
-        masks = [False] * 32
         if mod_qembs:
             q_tok_ids, Q_f[0] = mod_qembs(q_tok_ids, Q_f[0])
-        result.masks = masks
+        result.masks = qmasks.squeeze().tolist()
         result.qembs_after_mod_qembs = Q_f[0].clone()
         result.qtoks_after_mod_qembs = q_tok_ids
 
         results.append(result)
     return results
+
+def display_query_mod(
+        mod_qtoks: Optional[Callable[[Tensor], Tensor]] = None,
+        mod_qembs: Optional[Callable[[Tensor, Tensor, Tensor], tuple[Tensor, Tensor, Tensor]]] = None,
+        test_queries: Optional[list[str]] = None,
+        model: Optional[ModelInference] = None,
+        v2: bool = False,
+    ):
+    """
+    Internally runs `test_query_mod` on provided test queries, then nicely prints out the results.
+    Tokens colored red are not attended to by the attention mechanism.
+    """
+    results = test_query_mod(mod_qtoks, mod_qembs, test_queries, model, v2)
+    from transformers import AutoTokenizer
+    tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+    for i, result in enumerate(results):
+        print(f"**************************")
+        print(f"Results for query {i + 1}:")
+        print(f"Original query: \"{result.query}\"")
+        print(f"Original query tokens: {tokenizer.convert_ids_to_tokens(result.orig_qtoks)}")
+        colored_toks = "[" + ", ".join([f"{GREEN if unmasked else RED} {t} \x1b[0m" for t, unmasked in zip(tokenizer.convert_ids_to_tokens(result.qtoks_before_ctx), result.masks)]) + "]"
+        print(f"Modified query tokens PRIOR to contextualization: {colored_toks}")
+        print(f"Modified query tokens AFTER contextualization (no effect): {tokenizer.convert_ids_to_tokens(result.qtoks_after_mod_qembs)}")
 
 def set_retreive_change(
         query: str,

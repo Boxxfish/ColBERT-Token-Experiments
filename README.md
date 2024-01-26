@@ -15,6 +15,13 @@ cd pyterrier_colbert
 pip install -e .
 ```
 
+You will also need a Rust compiler (available [here](https://www.rust-lang.org/learn/get-started)) to install our accelerated ranker.
+
+```bash
+cd colbert_rs
+./build-and-install.sh
+```
+
 ## Running Experiments
 
 ### Using ColBERT v2
@@ -37,6 +44,13 @@ python index.py             # For MS MARCO
 python index_trec.py        # For TREC 2019-2020
 python index_v2.py          # For MS MARCO (ColBERT v2)
 python index_trec_v2.py     # For TREC 2019-2020 (ColBERT v2)
+
+mv msmarco_index/msmarco/ivfpq.100.faiss msmarco_index/msmarco/ivfpq.faiss
+mv msmarco_index_v2/msmarco/ivfpq.100.faiss msmarco_index_v2/msmarco/ivfpq.faiss
+mv trec_index/trec/ivfpq.100.faiss trec_index/trec/ivfpq.faiss
+mv trec_index_v2/trec/ivfpq.100.faiss trec_index_v2/trec/ivfpq.faiss
+
+mkdir results
 ```
 
 ### Visualization Tool
@@ -61,6 +75,7 @@ To run an experiment with ColBERT v2, use the `--v2` flag.
 **Shift in query embeddings after moving two words from the beginning to the end**
 
 ```bash
+mkdir shift_artifacts
 python compute_query_shift.py [--v2]
 python analyze_query_shift.py --experiment-compare-dists [--v2]
 ```

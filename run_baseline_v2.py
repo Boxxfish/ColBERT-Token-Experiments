@@ -11,23 +11,28 @@ from ir_measures import RR, Recall
 
 eval_metrics = [RR(rel=1), Recall(rel=1)@50, Recall(rel=1)@1000]
 
-pytcolbert = ColBERTFactory("../colbertv2.dnn", "./msmarco_index_v2", "msmarco", gpu=True)
-msmarco_ds = pt.get_dataset("irds:msmarco-passage")
+#pytcolbert = ColBERTFactory("../colbertv2.dnn", "./msmarco_index_v2", "msmarco", gpu=False)
+msmarco_ds = pt.get_dataset("msmarco_passage")
 topics = msmarco_ds.get_topics("dev")
 qrels = msmarco_ds.get_qrels("dev")
 
+#e2e = pytcolbert.end_to_end(
+#    set(),
+#    prune_queries=False,
+#    prune_documents=False,
+#)
+
 cmp_res = pt.Experiment(
-    ["baseline_colbertv2_msmarco"],
+    [None],
     topics,
     qrels,
     filter_by_qrels=True,
     eval_metrics=eval_metrics,
     save_dir="results",
     save_mode="reuse",
-    correction='bonferroni',
     verbose=True,
     baseline=0,
-    names=eval_metrics
+    names=["baseline_colbertv2_msmarco"]
 )
 
 print(cmp_res)
